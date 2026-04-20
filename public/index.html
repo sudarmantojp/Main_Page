@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nihon Study Hub — Japanese Learning Tools</title>
+  <meta name="description" content="Your one-stop hub for learning Japanese — Kanji writing, study tools, quizzes, and listening practice." />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Geist+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg:           #050d07;
+      --card:         #0b170d;
+      --border:       #1a3a1e;
+      --green:        #22c55e;
+      --green-bright: #86efac;
+      --green-dim:    #166534;
+      --green-glow:   rgba(34, 197, 94, 0.35);
+      --red:          #dc2626;
+      --red-glow:     rgba(220, 38, 38, 0.35);
+      --gold:         #ca8a04;
+      --gold-bright:  #fbbf24;
+      --gold-glow:    rgba(202, 138, 4, 0.35);
+      --cyan:         #22d3ee;
+      --cyan-glow:    rgba(34, 211, 238, 0.35);
+      --muted:        #4b7a54;
+      --text:         #86efac;
+      --font-body:    'Noto Sans JP', sans-serif;
+      --font-mono:    'Geist Mono', 'Courier New', monospace;
+      --radius:       1rem;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+    }
+
+    /* ─── Matrix Rain Canvas ─── */
+    #matrix-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.28;
+    }
+
+    /* ─── Radial glow overlay ─── */
+    .center-glow {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(34,197,94,0.08) 0%, transparent 70%);
+    }
+
+    /* ─── Page layout ─── */
+    .page {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 4rem 1.25rem;
+    }
+
+    /* ─── Header ─── */
+    header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+
+    .dot-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .dot-circle {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 20px rgba(220,38,38,0.65);
+      flex-shrink: 0;
+    }
+
+    .dot-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 8vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--green-bright);
+      text-shadow: 0 0 20px var(--green), 0 0 50px rgba(34,197,94,0.5);
+      margin-bottom: 0.75rem;
+      text-wrap: balance;
+    }
+
+    .subtitle {
+      font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+      color: var(--muted);
+      max-width: 28rem;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .divider-line {
+      height: 1px;
+      width: 4rem;
+      background: rgba(34,197,94,0.35);
+    }
+
+    .divider-text {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      color: var(--green);
+    }
+
+    /* ─── Grid ─── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 72rem;
+    }
+
+    @media (min-width: 600px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 1024px) {
+      .grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ─── Card ─── */
+    .card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.75rem;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+      transition: transform 0.28s cubic-bezier(.22,.68,0,1.2),
+                  box-shadow 0.28s ease,
+                  border-color 0.28s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.55);
+    }
+
+    .card:hover {
+      transform: translateY(-8px) scale(1.025);
+    }
+
+    .card:active {
+      transform: scale(0.98);
+    }
+
+    /* Scanline overlay on hover */
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,65,0.025) 2px,
+        rgba(0,255,65,0.025) 4px
+      );
+    }
+
+    .card:hover::after { opacity: 1; }
+
+    /* Color variants */
+    .card[data-color="green"]:hover {
+      border-color: rgba(34,197,94,0.75);
+      box-shadow: 0 0 40px var(--green-glow), 0 0 0 1px rgba(34,197,94,0.5), 0 8px 40px rgba(0,0,0,0.6);
+    }
+    .card[data-color="red"]:hover {
+      border-color: rgba(220,38,38,0.75);
+      box-shadow: 0 0 40px var(--red-glow), 0 0 0 1px rgba(220,38,38,0.5), 0 8px 40px rgba(0,0,0,0.6);
+    }
+    .card[data-color="gold"]:hover {
+      border-color: rgba(202,138,4,0.75);
+      box-shadow: 0 0 40px var(--gold-glow), 0 0 0 1px rgba(202,138,4,0.5), 0 8px 40px rgba(0,0,0,0.6);
+    }
+    .card[data-color="cyan"]:hover {
+      border-color: rgba(34,211,238,0.75);
+      box-shadow: 0 0 40px var(--cyan-glow), 0 0 0 1px rgba(34,211,238,0.5), 0 8px 40px rgba(0,0,0,0.6);
+    }
+
+    /* Top row */
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .card-icon {
+      font-size: 3rem;
+      line-height: 1;
+    }
+
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+    }
+
+    .card-kanji {
+      font-size: 2rem;
+      font-weight: 900;
+      line-height: 1;
+      transition: transform 0.3s ease, text-shadow 0.3s ease;
+    }
+
+    .card:hover .card-kanji { transform: scale(1.1); }
+
+    .card[data-color="green"] .card-kanji { color: var(--green-bright); }
+    .card[data-color="red"]   .card-kanji { color: var(--red); }
+    .card[data-color="gold"]  .card-kanji { color: var(--gold-bright); }
+    .card[data-color="cyan"]  .card-kanji { color: var(--cyan); }
+
+    .card[data-color="green"]:hover .card-kanji { text-shadow: 0 0 12px var(--green-bright), 0 0 30px var(--green); }
+    .card[data-color="red"]:hover   .card-kanji { text-shadow: 0 0 12px var(--red), 0 0 30px rgba(220,38,38,0.5); }
+    .card[data-color="gold"]:hover  .card-kanji { text-shadow: 0 0 12px var(--gold-bright), 0 0 30px var(--gold); }
+    .card[data-color="cyan"]:hover  .card-kanji { text-shadow: 0 0 12px var(--cyan), 0 0 30px rgba(34,211,238,0.5); }
+
+    /* External link icon */
+    .ext-icon {
+      width: 1rem;
+      height: 1rem;
+      opacity: 0;
+      color: var(--muted);
+      transform: translate(-4px, 4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover .ext-icon {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+
+    /* Label (matrix scramble) */
+    .card-label {
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      transition: text-shadow 0.1s ease;
+    }
+
+    .card[data-color="green"] .card-label { color: var(--green-bright); }
+    .card[data-color="red"]   .card-label { color: var(--red); }
+    .card[data-color="gold"]  .card-label { color: var(--gold-bright); }
+    .card[data-color="cyan"]  .card-label { color: var(--cyan); }
+
+    .card[data-color="green"].hovered .card-label { text-shadow: 0 0 8px var(--green-bright), 0 0 20px var(--green); }
+    .card[data-color="red"].hovered   .card-label { text-shadow: 0 0 8px var(--red); }
+    .card[data-color="gold"].hovered  .card-label { text-shadow: 0 0 8px var(--gold-bright); }
+    .card[data-color="cyan"].hovered  .card-label { text-shadow: 0 0 8px var(--cyan); }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 0.25rem;
+    }
+
+    /* Badge */
+    .card-badge {
+      margin-top: auto;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    .card[data-color="green"] .badge { background: rgba(34,197,94,0.12); color: var(--green-bright); border: 1px solid rgba(34,197,94,0.3); }
+    .card[data-color="green"] .badge-dot { background: var(--green); }
+    .card[data-color="red"]   .badge { background: rgba(220,38,38,0.12); color: var(--red); border: 1px solid rgba(220,38,38,0.3); }
+    .card[data-color="red"]   .badge-dot { background: var(--red); }
+    .card[data-color="gold"]  .badge { background: rgba(202,138,4,0.12); color: var(--gold-bright); border: 1px solid rgba(202,138,4,0.3); }
+    .card[data-color="gold"]  .badge-dot { background: var(--gold-bright); }
+    .card[data-color="cyan"]  .badge { background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3); }
+    .card[data-color="cyan"]  .badge-dot { background: var(--cyan); }
+
+    /* ─── Footer ─── */
+    footer {
+      margin-top: 4rem;
+      text-align: center;
+    }
+
+    .footer-text {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+    }
+
+    .footer-chars {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      margin-top: 0.75rem;
+    }
+
+    .footer-char {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--green-dim);
+      animation: pulse 1.5s infinite;
+    }
+
+    /* ─── Keyframes ─── */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Matrix Rain Canvas -->
+  <canvas id="matrix-canvas" aria-hidden="true"></canvas>
+
+  <!-- Center glow overlay -->
+  <div class="center-glow" aria-hidden="true"></div>
+
+  <!-- Page content -->
+  <div class="page">
+
+    <!-- Header -->
+    <header>
+      <div class="dot-row" aria-hidden="true">
+        <div class="dot-circle"></div>
+        <span class="dot-label">Nihon Study Hub</span>
+        <div class="dot-circle"></div>
+      </div>
+
+      <h1>日本語を学ぼう</h1>
+
+      <p class="subtitle">Choose your tool and begin your Japanese journey today</p>
+
+      <div class="divider" aria-hidden="true">
+        <div class="divider-line"></div>
+        <span class="divider-text">[ SELECT MODULE ]</span>
+        <div class="divider-line"></div>
+      </div>
+    </header>
+
+    <!-- Cards -->
+    <section class="grid" aria-label="Japanese learning tools">
+
+      <!-- Kanji_Writer -->
+      <a class="card" data-color="green" data-slug="Kanji_Writer" data-label="Kanji_Writer"
+         href="https://sudarmantojp.github.io/Kanji_Writer" target="_blank" rel="noopener noreferrer"
+         aria-label="Open Kanji_Writer in a new tab">
+        <div class="card-top">
+          <span class="card-icon" aria-hidden="true">&#9998;</span>
+          <div class="card-right">
+            <span class="card-kanji">漢字</span>
+            <svg class="ext-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="card-label">Kanji_Writer</div>
+          <p class="card-desc">Practice drawing kanji stroke-by-stroke with guided animations.</p>
+        </div>
+        <div class="card-badge">
+          <span class="badge">
+            <span class="badge-dot"></span>
+            sudarmantojp.github.io/Kanji_Writer
+          </span>
+        </div>
+      </a>
+
+      <!-- Study_Nihon -->
+      <a class="card" data-color="red" data-slug="Study_Nihon" data-label="Study_Nihon"
+         href="https://sudarmantojp.github.io/Study_Nihon" target="_blank" rel="noopener noreferrer"
+         aria-label="Open Study_Nihon in a new tab">
+        <div class="card-top">
+          <span class="card-icon" aria-hidden="true">&#128218;</span>
+          <div class="card-right">
+            <span class="card-kanji">日本語</span>
+            <svg class="ext-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="card-label">Study_Nihon</div>
+          <p class="card-desc">Comprehensive Japanese study materials — vocab, grammar & more.</p>
+        </div>
+        <div class="card-badge">
+          <span class="badge">
+            <span class="badge-dot"></span>
+            sudarmantojp.github.io/Study_Nihon
+          </span>
+        </div>
+      </a>
+
+      <!-- JapanQuiz -->
+      <a class="card" data-color="gold" data-slug="JapanQuiz" data-label="JapanQuiz"
+         href="https://sudarmantojp.github.io/JapanQuiz" target="_blank" rel="noopener noreferrer"
+         aria-label="Open JapanQuiz in a new tab">
+        <div class="card-top">
+          <span class="card-icon" aria-hidden="true">&#127919;</span>
+          <div class="card-right">
+            <span class="card-kanji">試験</span>
+            <svg class="ext-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="card-label">JapanQuiz</div>
+          <p class="card-desc">Test your Japanese knowledge with interactive quizzes and flashcards.</p>
+        </div>
+        <div class="card-badge">
+          <span class="badge">
+            <span class="badge-dot"></span>
+            sudarmantojp.github.io/JapanQuiz
+          </span>
+        </div>
+      </a>
+
+      <!-- Kanji_Listening -->
+      <a class="card" data-color="cyan" data-slug="Kanji_Listening" data-label="Kanji_Listening"
+         href="https://sudarmantojp.github.io/Kanji_Listening" target="_blank" rel="noopener noreferrer"
+         aria-label="Open Kanji_Listening in a new tab">
+        <div class="card-top">
+          <span class="card-icon" aria-hidden="true">&#127911;</span>
+          <div class="card-right">
+            <span class="card-kanji">聴解</span>
+            <svg class="ext-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="card-label">Kanji_Listening</div>
+          <p class="card-desc">Train your ear with kanji pronunciation and listening exercises.</p>
+        </div>
+        <div class="card-badge">
+          <span class="badge">
+            <span class="badge-dot"></span>
+            sudarmantojp.github.io/Kanji_Listening
+          </span>
+        </div>
+      </a>
+
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p class="footer-text">// sudarmantojp.github.io &bull; がんばって！</p>
+      <div class="footer-chars" aria-hidden="true">
+        <span class="footer-char" style="animation-delay:0s">ア</span>
+        <span class="footer-char" style="animation-delay:0.15s">イ</span>
+        <span class="footer-char" style="animation-delay:0.3s">ウ</span>
+        <span class="footer-char" style="animation-delay:0.45s">エ</span>
+        <span class="footer-char" style="animation-delay:0.6s">オ</span>
+      </div>
+    </footer>
+
+  </div><!-- /.page -->
+
+  <script>
+    /* ═══════════════════════════════════════
+       MATRIX RAIN
+    ═══════════════════════════════════════ */
+    (function () {
+      const canvas = document.getElementById('matrix-canvas');
+      const ctx    = canvas.getContext('2d');
+
+      const JP_CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン漢字日本語学習ABCDEFabcdef0123456789';
+
+      let cols, drops;
+      const FONT_SIZE = 14;
+
+      function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        cols  = Math.floor(canvas.width / FONT_SIZE);
+        drops = Array.from({ length: cols }, () => Math.random() * -canvas.height / FONT_SIZE | 0);
+      }
+
+      function draw() {
+        ctx.fillStyle = 'rgba(5, 13, 7, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.font = FONT_SIZE + 'px monospace';
+
+        for (let i = 0; i < drops.length; i++) {
+          const ch = JP_CHARS[Math.floor(Math.random() * JP_CHARS.length)];
+          const x  = i * FONT_SIZE;
+          const y  = drops[i] * FONT_SIZE;
+
+          // Head of column — bright
+          if (drops[i] > 0) {
+            ctx.fillStyle = '#86efac';
+            ctx.fillText(ch, x, y);
+          }
+
+          // Trail — green
+          ctx.fillStyle = 'rgba(34, 197, 94, 0.7)';
+          ctx.fillText(ch, x, y - FONT_SIZE);
+
+          drops[i]++;
+          if (drops[i] * FONT_SIZE > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+        }
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      setInterval(draw, 50);
+    })();
+
+    /* ═══════════════════════════════════════
+       MATRIX SCRAMBLE ON HOVER
+    ═══════════════════════════════════════ */
+    (function () {
+      const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ漢字日本語ABCDEFabcdef0123456789!@#$%';
+
+      document.querySelectorAll('.card').forEach(function (card) {
+        const labelEl    = card.querySelector('.card-label');
+        const origLabel  = card.dataset.label;
+        let   interval   = null;
+        let   step       = 0;
+
+        function startScramble() {
+          card.classList.add('hovered');
+          step = 0;
+          clearInterval(interval);
+          interval = setInterval(function () {
+            step++;
+            const scrambled = origLabel.split('').map(function (ch, i) {
+              if (ch === ' ') return ' ';
+              if (i < step - 2) return origLabel[i];
+              return CHARS[Math.floor(Math.random() * CHARS.length)];
+            }).join('');
+            labelEl.textContent = step > origLabel.length + 3 ? origLabel : scrambled;
+            if (step > origLabel.length + 3) {
+              clearInterval(interval);
+              labelEl.textContent = origLabel;
+            }
+          }, 60);
+        }
+
+        function stopScramble() {
+          card.classList.remove('hovered');
+          clearInterval(interval);
+          labelEl.textContent = origLabel;
+        }
+
+        card.addEventListener('mouseenter', startScramble);
+        card.addEventListener('mouseleave', stopScramble);
+        card.addEventListener('focus',      startScramble);
+        card.addEventListener('blur',       stopScramble);
+      });
+    })();
+  </script>
+</body>
+</html>
